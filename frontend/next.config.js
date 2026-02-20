@@ -4,3 +4,4 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+// Trigger Vercel deploy
