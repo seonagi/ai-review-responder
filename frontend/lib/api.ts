@@ -143,6 +143,79 @@ class ApiClient {
       hasMore: boolean
     }>(`/google/reviews${query ? '?' + query : ''}`);
   }
+
+  // Response Generation APIs (Phase 3)
+  
+  async generateResponse(reviewId: string) {
+    return this.request<{
+      success: boolean
+      response: {
+        id: string
+        response_text: string
+        generated_at: string
+        status: string
+      }
+      alreadyExists?: boolean
+      message?: string
+      rateLimit?: {
+        remaining: number
+      }
+    }>('/responses/generate', {
+      method: 'POST',
+      body: JSON.stringify({ reviewId }),
+    });
+  }
+
+  async updateResponse(responseId: string, responseText: string) {
+    return this.request<{
+      success: boolean
+      response: {
+        id: string
+        response_text: string
+        generated_at: string
+        status: string
+      }
+    }>(`/responses/${responseId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ responseText }),
+    });
+  }
+
+  async approveResponse(responseId: string) {
+    return this.request<{
+      success: boolean
+      message: string
+      response: {
+        id: string
+        status: string
+        postedAt: string
+      }
+    }>(`/responses/${responseId}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteResponse(responseId: string) {
+    return this.request<{
+      success: boolean
+      message: string
+    }>(`/responses/${responseId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getResponse(reviewId: string) {
+    return this.request<{
+      response: {
+        id: string
+        response_text: string
+        generated_at: string
+        approved_at?: string
+        posted_at?: string
+        status: string
+      }
+    }>(`/responses/${reviewId}`);
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);

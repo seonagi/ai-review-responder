@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import api from '@/lib/api'
+import ReviewCard from '@/components/ReviewCard'
 
 interface GoogleConnection {
   connected: boolean
@@ -338,63 +339,11 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-4">
                   {reviews.map(review => (
-                    <div key={review.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-start gap-4">
-                        {/* Reviewer Avatar */}
-                        <div className="flex-shrink-0">
-                          {review.reviewer_photo_url ? (
-                            <img 
-                              src={review.reviewer_photo_url} 
-                              alt={review.reviewer_name}
-                              className="w-12 h-12 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-                              {review.reviewer_name[0].toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Review Content */}
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="font-semibold text-gray-900">{review.reviewer_name}</p>
-                              <p className="text-sm text-gray-500">{formatDate(review.posted_at)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">{renderStars(review.rating)}</span>
-                              {review.is_responded && (
-                                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                  Responded
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {review.review_text && (
-                            <p className="text-gray-700 mb-2">{review.review_text}</p>
-                          )}
-
-                          {review.review_reply && (
-                            <div className="mt-3 pl-4 border-l-2 border-blue-200 bg-blue-50 p-3 rounded">
-                              <p className="text-sm font-semibold text-blue-900 mb-1">
-                                Your Response:
-                              </p>
-                              <p className="text-sm text-gray-700">{review.review_reply}</p>
-                            </div>
-                          )}
-
-                          {!review.is_responded && (
-                            <div className="mt-3">
-                              <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                                💬 Generate Response (Phase 3)
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <ReviewCard 
+                      key={review.id} 
+                      review={review} 
+                      onResponsePosted={loadReviews}
+                    />
                   ))}
                 </div>
               )}

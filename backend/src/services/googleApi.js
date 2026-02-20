@@ -281,11 +281,91 @@ async function storeReviews(connectionId, reviews) {
   }
 }
 
+/**
+ * Post a reply to a Google review
+ * @param {string} connectionId - Database connection ID
+ * @param {string} locationName - Google location ID (e.g., accounts/123/locations/456)
+ * @param {string} reviewId - Google review ID
+ * @param {string} replyText - The reply text to post
+ */
+async function postReviewReply(connectionId, locationName, reviewId, replyText) {
+  try {
+    const accessToken = await getValidAccessToken(connectionId);
+
+    // Google My Business API endpoint for posting review replies
+    // The review name format is: accounts/{accountId}/locations/{locationId}/reviews/{reviewId}
+    const reviewName = `${locationName}/reviews/${reviewId}`;
+
+    const response = await axios.put(
+      `${GOOGLE_REVIEWS_API_BASE}/${reviewName}/reply`,
+      {
+        comment: replyText
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // Log successful post to audit_logs
+    await pool.query(
+      `INSERT INTO audit_logs (action, entity_type, entity_id, details)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        'google_post_reply',
+        'review',
+        reviewId,
+        JSON.stringify({ 
+          locationName, 
+          reviewId,
+          replyLength: replyText.length 
+        })
+      ]
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Error posting review reply:', error.response?.data || error.message);
+
+    // Log error to audit_logs
+    await pool.query(
+      `INSERT INTO audit_logs (action, entity_type, entity_id, details)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        'google_post_reply_error',
+        'review',
+        reviewId,
+        JSON.stringify({ 
+          locationName,
+          reviewId,
+          error: error.response?.data || error.message 
+        })
+      ]
+    );
+
+    // Handle specific error cases
+    if (error.response?.status === 409) {
+      throw new Error('Review already has a reply');
+    }
+    if (error.response?.status === 404) {
+      throw new Error('Review not found on Google');
+    }
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      throw new Error('Google authentication error - please reconnect your account');
+    }
+
+    throw new Error(`Failed to post reply to Google: ${error.message}`);
+  }
+}
+
 module.exports = {
   refreshAccessToken,
   getValidAccessToken,
   listAccounts,
   listLocations,
   fetchReviews,
-  storeReviews
+  storeReviews,
+  postReviewReply
 };

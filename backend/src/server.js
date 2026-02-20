@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const googleRoutes = require('./routes/google');
+const responsesRoutes = require('./routes/responses');
 const errorHandler = require('./middleware/errorHandler');
 const initializePassport = require('./config/passport');
 
@@ -50,6 +51,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/google', googleRoutes);
+app.use('/api/responses', responsesRoutes);
 
 // 404 handler
 app.use((req, res) => {
