@@ -2,13 +2,19 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const passport = require('passport');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
+const googleRoutes = require('./routes/google');
 const errorHandler = require('./middleware/errorHandler');
+const initializePassport = require('./config/passport');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Initialize Passport
+initializePassport();
 
 // Security middleware
 app.use(helmet());
@@ -43,6 +49,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/google', googleRoutes);
 
 // 404 handler
 app.use((req, res) => {

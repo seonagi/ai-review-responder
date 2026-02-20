@@ -94,6 +94,55 @@ class ApiClient {
   async getCurrentUser() {
     return this.request<{ user: any }>('/auth/me');
   }
+
+  async googleStatus() {
+    return this.request<{
+      connected: boolean
+      businessName?: string
+      connectedAt?: string
+      lastSyncedAt?: string
+      connectionId?: string
+    }>('/google/status');
+  }
+
+  async googleDisconnect() {
+    return this.request<{ success: boolean; message: string }>('/google/disconnect', {
+      method: 'POST',
+    });
+  }
+
+  async syncReviews() {
+    return this.request<{
+      success: boolean
+      message: string
+      stats: { totalFetched: number; newReviews: number; updatedReviews: number }
+    }>('/google/sync-reviews', {
+      method: 'POST',
+    });
+  }
+
+  async getReviews(params?: {
+    limit?: number
+    offset?: number
+    rating?: number
+    responded?: boolean
+  }) {
+    const queryParams = new URLSearchParams()
+    
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.offset) queryParams.append('offset', params.offset.toString())
+    if (params?.rating) queryParams.append('rating', params.rating.toString())
+    if (params?.responded !== undefined) queryParams.append('responded', params.responded.toString())
+
+    const query = queryParams.toString()
+    return this.request<{
+      reviews: any[]
+      total: number
+      limit: number
+      offset: number
+      hasMore: boolean
+    }>(`/google/reviews${query ? '?' + query : ''}`);
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);
