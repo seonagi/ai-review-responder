@@ -109,9 +109,16 @@ export default function DashboardContent() {
   }
 
   const handleConnectGoogle = () => {
-    // Redirect to backend OAuth endpoint
+    // Redirect to backend OAuth endpoint with user ID
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-    window.location.href = `${backendUrl}/google/connect`
+    const userId = user?.id
+    
+    if (!userId) {
+      setMessage({ type: 'error', text: 'User session error. Please refresh and try again.' })
+      return
+    }
+    
+    window.location.href = `${backendUrl}/google/connect?userId=${userId}`
   }
 
   const handleDisconnect = async () => {
