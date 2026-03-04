@@ -110,8 +110,8 @@ export default function DashboardContent() {
 
   const handleConnectGoogle = () => {
     // Redirect to backend OAuth endpoint
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
-    window.location.href = `${backendUrl}/api/google/connect`
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+    window.location.href = `${backendUrl}/google/connect`
   }
 
   const handleDisconnect = async () => {
