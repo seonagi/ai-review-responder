@@ -575,3 +575,4 @@ See `database-schema.sql` for complete schema.
 
 **Version:** 1.0.0 (MVP)  
 **Last updated:** 2026-02-20
+# Trigger deploy Wed Mar  4 13:08:28 GMT 2026
