@@ -128,7 +128,7 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
    FRONTEND_URL=https://ai-review-responder.vercel.app
    GOOGLE_CLIENT_ID=<from your OAuth client>
    GOOGLE_CLIENT_SECRET=<from your OAuth client>
-   GOOGLE_CALLBACK_URL=https://your-backend-url.railway.app/api/auth/google/callback
+   GOOGLE_CALLBACK_URL=https://your-backend-url.railway.app/api/google/callback
    OPENAI_API_KEY=<your OpenAI key>
    OPENAI_MODEL=gpt-3.5-turbo
    ```
@@ -141,7 +141,7 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 
 10. **Update GOOGLE_CALLBACK_URL:**
     - Go back to "Variables"
-    - Update `GOOGLE_CALLBACK_URL` to: `https://your-backend-name.up.railway.app/api/auth/google/callback`
+    - Update `GOOGLE_CALLBACK_URL` to: `https://your-backend-name.up.railway.app/api/google/callback`
     - Redeploy (automatic)
 
 **✅ SAVE THE BACKEND_URL** - you'll need it for Vercel and Google!
@@ -155,8 +155,8 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 2. **Select:** Moltbot Project
 3. **Click:** "AI Review Responder OAuth" (the OAuth client you just created)
 4. **Authorized redirect URIs:**
-   - **Add:** `https://your-backend-name.up.railway.app/api/auth/google/callback`
-   - **Keep:** `http://localhost:5000/api/auth/google/callback` (for local dev)
+   - **Add:** `https://your-backend-name.up.railway.app/api/google/callback`
+   - **Keep:** `http://localhost:5000/api/google/callback` (for local dev)
 5. **Click:** "Save"
 
 ---

@@ -90,8 +90,8 @@ Complete step-by-step guide to enable Google My Business integration for AI Revi
 
 8. **Authorized Redirect URIs:**
    - Click **"+ Add URI"**
-   - **Local development:** `http://localhost:5000/api/auth/google/callback`
-   - **Production (later):** `https://your-backend-url.railway.app/api/auth/google/callback`
+   - **Local development:** `http://localhost:5000/api/google/callback`
+   - **Production (later):** `https://your-backend-url.railway.app/api/google/callback`
    - Click **"Create"**
 
 9. **Save Your Credentials:**
@@ -157,10 +157,10 @@ GOOGLE_CLIENT_ID=your-client-id-here.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-secret-here
 
 # OAuth callback URL (must match Google Console settings)
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/google/callback
 
 # For production, change to:
-# GOOGLE_CALLBACK_URL=https://your-backend.railway.app/api/auth/google/callback
+# GOOGLE_CALLBACK_URL=https://your-backend.railway.app/api/google/callback
 ```
 
 **⚠️ SECURITY WARNING:**
@@ -192,13 +192,13 @@ npm install passport passport-google-oauth20
    ```
 
 2. **Initiate OAuth:**
-   - Open browser: `http://localhost:5000/api/auth/google`
+   - Open browser: `http://localhost:5000/api/google`
    - You'll be redirected to Google consent screen
 
 3. **Grant Permissions:**
    - Sign in with your Google account
    - Click **"Allow"** to grant access
-   - You'll be redirected back to `http://localhost:5000/api/auth/google/callback`
+   - You'll be redirected back to `http://localhost:5000/api/google/callback`
 
 4. **Success Response:**
    - You should see a JSON response with connection details
@@ -358,7 +358,7 @@ When deploying to production:
 
 ✅ **Next steps:**
 - Start the backend (`npm run dev`)
-- Test OAuth flow by visiting `/api/auth/google`
+- Test OAuth flow by visiting `/api/google`
 - Fetch your first reviews!
 
 ---
