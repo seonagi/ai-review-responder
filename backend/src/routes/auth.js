@@ -198,4 +198,145 @@ router.get('/me', authMiddleware, async (req, res, next) => {
   }
 });
 
+// Request password reset
+const forgotPasswordValidation = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email address'),
+];
+
+router.post('/forgot-password', forgotPasswordValidation, validate, async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const crypto = require('crypto');
+    const emailService = require('../services/emailService');
+
+    // Find user by email
+    const userResult = await db.query(
+      'SELECT id, email FROM users WHERE email = $1',
+      [email]
+    );
+
+    // Always return success to prevent email enumeration attacks
+    if (userResult.rows.length === 0) {
+      return res.json({
+        message: 'If an account exists with that email, we have sent a password reset link.',
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+
+    // Save token to database
+    await db.query(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+       VALUES ($1, $2, $3)`,
+      [user.id, tokenHash, expiresAt]
+    );
+
+    // Send email with reset link
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    await emailService.sendPasswordResetEmail(email, resetToken, frontendUrl);
+
+    // Log the action
+    await db.query(
+      `INSERT INTO audit_logs (user_id, action, entity_type, details)
+       VALUES ($1, $2, $3, $4)`,
+      [user.id, 'forgot_password_request', 'user', JSON.stringify({ email })]
+    );
+
+    res.json({
+      message: 'If an account exists with that email, we have sent a password reset link.',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Reset password with token
+const resetPasswordValidation = [
+  body('token')
+    .notEmpty()
+    .withMessage('Reset token is required'),
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+];
+
+router.post('/reset-password', resetPasswordValidation, validate, async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    const crypto = require('crypto');
+
+    // Hash the provided token
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find valid reset token
+    const tokenResult = await db.query(
+      `SELECT user_id, token_hash, expires_at FROM password_reset_tokens
+       WHERE token_hash = $1 AND expires_at > CURRENT_TIMESTAMP AND used_at IS NULL`,
+      [tokenHash]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      return res.status(400).json({
+        error: 'Invalid or expired token',
+        message: 'The password reset link is invalid or has expired. Please request a new one.',
+      });
+    }
+
+    const resetToken = tokenResult.rows[0];
+    const userId = resetToken.user_id;
+
+    // Hash new password
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Update password and mark token as used
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Update user password
+      await client.query(
+        'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [passwordHash, userId]
+      );
+
+      // Mark token as used
+      await client.query(
+        'UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE token_hash = $1',
+        [tokenHash]
+      );
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    // Log the action
+    await db.query(
+      `INSERT INTO audit_logs (user_id, action, entity_type, details)
+       VALUES ($1, $2, $3, $4)`,
+      [userId, 'password_reset', 'user', JSON.stringify({ success: true })]
+    );
+
+    res.json({
+      message: 'Password reset successfully. You can now log in with your new password.',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
