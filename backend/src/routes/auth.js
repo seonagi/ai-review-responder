@@ -198,6 +198,8 @@ router.get('/me', authMiddleware, async (req, res, next) => {
   }
 });
 
+// ============ PASSWORD RESET ENDPOINTS ============
+
 // Request password reset
 const forgotPasswordValidation = [
   body('email')
@@ -338,5 +340,102 @@ router.post('/reset-password', resetPasswordValidation, validate, async (req, re
     next(error);
   }
 });
+
+// ============ GOOGLE OAUTH FOR SIGNUP/LOGIN ============
+
+const passport = require('passport');
+
+/**
+ * GET /api/auth/google/login
+ * Initiate Google OAuth flow for signup/login
+ * Public: Redirects to Google consent screen
+ */
+router.get('/google/login', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  accessType: 'offline',
+  prompt: 'consent',
+}));
+
+/**
+ * GET /api/auth/google/callback
+ * OAuth callback handler - creates or updates user
+ * Public: Google redirects here after user authorizes
+ */
+router.get('/google/callback',
+  passport.authenticate('google', {
+    session: false,
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=oauth_failed`
+  }),
+  async (req, res) => {
+    try {
+      const { profile, accessToken, refreshToken } = req.user;
+      const { id: googleId, email, name, picture } = profile;
+
+      // Check if user with this email already exists
+      let user = await db.query(
+        'SELECT id, email, name, created_at FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (user.rows.length > 0) {
+        // User exists - log them in
+        const existingUser = user.rows[0];
+        
+        // Generate JWT token
+        const token = jwt.sign(
+          { userId: existingUser.id, email: existingUser.email },
+          process.env.JWT_SECRET,
+          { expiresIn: '7d' }
+        );
+
+        // Update last login
+        await db.query(
+          'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1',
+          [existingUser.id]
+        );
+
+        // Log login
+        await db.query(
+          `INSERT INTO audit_logs (user_id, action, entity_type, details)
+           VALUES ($1, $2, $3, $4)`,
+          [existingUser.id, 'google_login', 'user', JSON.stringify({ email })]
+        );
+
+        // Redirect to dashboard with token
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard?token=${token}`);
+      }
+
+      // User doesn't exist - create new account via OAuth
+      const result = await db.query(
+        `INSERT INTO users (email, name, email_verified, is_active, google_id)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, email, name, created_at`,
+        [email, name || null, true, true, googleId]
+      );
+
+      const newUser = result.rows[0];
+
+      // Generate JWT token for new user
+      const token = jwt.sign(
+        { userId: newUser.id, email: newUser.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      // Log registration via OAuth
+      await db.query(
+        `INSERT INTO audit_logs (user_id, action, entity_type, details)
+         VALUES ($1, $2, $3, $4)`,
+        [newUser.id, 'google_signup', 'user', JSON.stringify({ email, name })]
+      );
+
+      // Redirect to dashboard with token
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard?token=${token}`);
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=callback_failed`);
+    }
+  }
+);
 
 module.exports = router;
