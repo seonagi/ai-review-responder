@@ -23,6 +23,7 @@ async function runMigration() {
     console.log('✅ Database migration completed successfully!');
     console.log('📊 Tables created:');
     console.log('   - users');
+    console.log('   - password_reset_tokens');
     console.log('   - google_connections');
     console.log('   - reviews');
     console.log('   - responses');
